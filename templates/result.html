@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-8">
+        <div class="main-container">
+            <div class="text-center mb-4">
+                <h2 class="mb-3">Validation Results</h2>
+                <p class="text-muted">Analysis for: <strong>{{ filename }}</strong></p>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header {% if validation.is_valid %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="fas {% if validation.is_valid %}fa-check-circle{% else %}fa-times-circle{% endif %} me-2"></i>
+                        {% if validation.is_valid %}Valid Terraform Plan{% else %}Invalid Terraform Plan{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>File Type:</strong> {{ validation.file_type }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge {% if validation.is_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if validation.is_valid %}Valid{% else %}Invalid{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Message:</strong></p>
+                            <p class="text-muted">{{ validation.message }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if validation.is_valid and validation.plan_data and validation.show_plan_summary %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Plan Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if validation.plan_data.terraform_version %}
+                        <div class="col-md-6">
+                            <p><strong>Terraform Version:</strong> {{ validation.plan_data.terraform_version }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if validation.plan_data.format_version %}
+                        <div class="col-md-6">
+                            <p><strong>Format Version:</strong> {{ validation.plan_data.format_version }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if validation.plan_data.resource_changes %}
+                    <h6 class="mt-3">Resource Changes:</h6>
+                    <div class="row">
+                        {% set changes = validation.plan_data.resource_changes %}
+                        {% set create_count = changes | selectattr("change.actions", "equalto", ["create"]) | list | length %}
+                        {% set update_count = changes | selectattr("change.actions", "equalto", ["update"]) | list | length %}
+                        {% set delete_count = changes | selectattr("change.actions", "equalto", ["delete"]) | list | length %}
+                        {% set replace_count = changes | selectattr("change.actions", "equalto", ["delete", "create"]) | list | length %}
+                        
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-success text-white rounded">
+                                <h4>{{ create_count }}</h4>
+                                <small>To Create</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-warning text-white rounded">
+                                <h4>{{ update_count }}</h4>
+                                <small>To Update</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-danger text-white rounded">
+                                <h4>{{ delete_count }}</h4>
+                                <small>To Delete</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-2 bg-info text-white rounded">
+                                <h4>{{ replace_count }}</h4>
+                                <small>To Replace</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Resource Types:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Resource Type</th>
+                                        <th>Name</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set filtered_changes = validation.plan_data.resource_changes | selectattr('change.actions', 'ne', ['no-op']) | list %}
+                                    {% for change in filtered_changes %}
+                                    <tr>
+                                        <td><code>{{ change.type }}</code></td>
+                                        <td>{{ change.name }}</td>
+                                        <td>
+                                            {% for action in change.change.actions %}
+                                                <span class="badge 
+                                                    {% if action == 'create' %}bg-success
+                                                    {% elif action == 'update' %}bg-warning
+                                                    {% elif action == 'delete' %}bg-danger
+                                                    {% else %}bg-secondary
+                                                    {% endif %}">
+                                                    {{ action }}
+                                                </span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if validation.plan_data.configuration %}
+                    <div class="mt-3">
+                        <h6>Configuration Providers:</h6>
+                        {% if validation.plan_data.configuration.provider_config %}
+                            {% for provider, config in validation.plan_data.configuration.provider_config.items() %}
+                                <span class="badge bg-primary me-2">{{ provider }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if ai_explanation %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>TerraReviewBot AI Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ai_explanation.summary %}
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-primary">
+                            <i class="fas fa-chart-pie me-2"></i>Summary
+                        </h6>
+                        <p class="mb-0">{{ ai_explanation.summary }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if ai_explanation.resource_analysis %}
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-info">
+                            <i class="fas fa-cogs me-2"></i>Resource Analysis
+                        </h6>
+                        <p class="mb-0">{{ ai_explanation.resource_analysis }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if ai_explanation.security_insights %}
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-warning">
+                            <i class="fas fa-shield-alt me-2"></i>Security Insights
+                        </h6>
+                        <p class="mb-0">{{ ai_explanation.security_insights }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if ai_explanation.recommendations %}
+                    <div class="mb-0">
+                        <h6 class="fw-bold text-success">
+                            <i class="fas fa-lightbulb me-2"></i>Recommendations
+                        </h6>
+                        <p class="mb-0">{{ ai_explanation.recommendations }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+                        {% if ai_result %}
+            <div class="card">
+                <div class="card-header {% if ai_result.success %}bg-primary{% else %}bg-warning{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>TerraReviewBot AI Analysis
+                        {% if ai_result.success %}
+                            <small class="float-end">{{ ai_result.model }}</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ai_result.success %}
+                        <div class="ai-analysis">
+                            {{ ai_result.analysis | replace('
+', '<br>') | safe }}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>AI Analysis Failed:</strong> {{ ai_result.error }}
+                        </div>
+                        <p class="text-muted">To enable AI analysis:</p>
+                        <ol>
+                            <li>Get an API key from <a href="https://build.nvidia.com/" target="_blank">NVIDIA Build</a></li>
+                            <li>Set the <code>NVIDIA_API_KEY</code> environment variable</li>
+                            <li>Restart TerraReviewBot</li>
+                        </ol>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>TerraReviewBot AI Analysis
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">AI analysis is only available for valid Terraform plans with parseable data.</p>
+                    <small class="text-muted">Upload a valid JSON or binary Terraform plan to see AI-powered insights.</small>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i>Upload Another File
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

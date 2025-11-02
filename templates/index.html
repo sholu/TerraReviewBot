@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-8">
+        <div class="main-container">
+            <div class="text-center mb-5">
+                <i class="fas fa-robot feature-icon"></i>
+                <h1 class="display-4 mb-3">TerraReviewBot</h1>
+                <p class="lead text-muted">Upload your Terraform plan.out file for AI-powered validation and analysis</p>
+            </div>
+
+            <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="mb-4">
+                    <label for="apiKey" class="form-label">
+                        <i class="fas fa-key me-2"></i>NVIDIA API Key
+                        <small class="text-muted">(Required for AI Analysis)</small>
+                        {% if stored_api_key %}
+                        <span class="badge bg-success ms-2">Stored in Session</span>
+                        {% endif %}
+                    </label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="apiKey" name="api_key" 
+                               placeholder="{% if stored_api_key %}API key stored - leave blank to use stored key{% else %}Enter your NVIDIA API key here...{% endif %}" 
+                               value="">
+                        {% if stored_api_key %}
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearApiKey()" title="Clear stored API key">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        {% if stored_api_key %}
+                        Your API key is stored for this session. You can upload multiple files without re-entering it.
+                        {% else %}
+                        Don't have an API key? <a href="#apiInstructions" data-bs-toggle="collapse" class="text-primary">Get one for free from NVIDIA</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="collapse mb-4" id="apiInstructions">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>How to Get Your Free NVIDIA API Key</h6>
+                        </div>
+                        <div class="card-body">
+                            <ol class="mb-0">
+                                <li>Visit <a href="https://build.nvidia.com/" target="_blank" class="text-primary">NVIDIA Build</a></li>
+                                <li>Sign up for a free account or log in</li>
+                                <li>Navigate to the "API Keys" section</li>
+                                <li>Generate a new API key for Llama models</li>
+                                <li>Copy and paste the key in the field above</li>
+                            </ol>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <small><strong>Privacy:</strong> Your API key is only used for this session and is not stored anywhere.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-area mb-4" id="uploadArea">
+                    <div class="mb-3">
+                        <i class="fas fa-file-upload fa-3x text-primary mb-3"></i>
+                        <h4>Drop your Terraform plan file here</h4>
+                        <p class="text-muted">or click to browse</p>
+                        <input type="file" class="form-control d-none" id="fileInput" name="file" 
+                               accept=".json,.txt" required>
+                    </div>
+                    <div id="fileName" class="text-success fw-bold"></div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-upload" id="uploadBtn" disabled>
+                        <i class="fas fa-robot me-2"></i>Analyze with AI
+                    </button>
+                </div>
+            </form>
+
+            <div class="row mt-5">
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                    <h5>Format Validation</h5>
+                    <p class="text-muted">Validates JSON and text Terraform plan formats</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-cogs fa-2x text-info mb-3"></i>
+                    <h5>Smart Detection</h5>
+                    <p class="text-muted">Automatically detects file type and structure</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-robot fa-2x text-warning mb-3"></i>
+                    <h5>AI Analysis</h5>
+                    <p class="text-muted">AI-powered plan summarization and insights</p>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <h5 class="mb-3">Supported File Types:</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-alt text-success me-2"></i>JSON Format (.json) - Preferred</h6>
+                        <code class="small text-muted">
+                            terraform plan -out=plan.tfplan<br>
+                            terraform show -json plan.tfplan > plan.json
+                        </code>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-text text-info me-2"></i>Text Format (.txt)</h6>
+                        <code class="small text-muted">
+                            terraform plan > plan.txt
+                        </code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Generate your plan files using the commands above.</strong> JSON format is preferred for better structured analysis.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadArea').addEventListener('click', function() {
+    document.getElementById('fileInput').click();
+});
+
+function clearApiKey() {
+    if (confirm('Clear the stored API key from this session?')) {
+        fetch('/clear-api-key', { method: 'POST' })
+            .then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}
