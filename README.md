@@ -39,7 +39,7 @@ TerraReviewBot is a modern Flask web application that validates Terraform plan f
 
 4. **Start the application:**
    ```bash
-   python app.py
+   python3 app.py
    ```
 
 5. **Open your browser:**
@@ -105,6 +105,18 @@ terraform plan > plan.txt
 - **✅ File Validation**: Prevents malicious uploads
 - **📏 Size Limits**: 16MB maximum file size
 - **🛡️ Secure Processing**: All operations happen server-side with proper validation
+
+## 🚨 Troubleshooting
+
+**AI Analysis Error - "unexpected keyword argument 'proxies'":**
+- This indicates an older OpenAI library version
+- The app automatically handles this with fallback compatibility
+- If issues persist, update the OpenAI library: `pip install --upgrade openai`
+
+**Common Issues:**
+- **File upload fails**: Check file size (max 16MB) and format (.json or .txt)
+- **AI not working**: Verify your NVIDIA API key is correct
+- **Session lost**: API keys are session-only, re-enter after browser restart
 
 ## 📁 Project Structure
 
