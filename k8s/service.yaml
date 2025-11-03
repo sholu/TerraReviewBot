@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: terrareviewbot-service
+  namespace: default
+  labels:
+    app: terrareviewbot
+spec:
+  selector:
+    app: terrareviewbot
+  ports:
+  - port: 80
+    targetPort: 5001
+    protocol: TCP
+    name: http
+    nodePort: 31229
+  type: NodePort
