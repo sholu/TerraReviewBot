@@ -56,9 +56,10 @@ def analyze_with_ai(plan_data, api_key):
         return None, "No API key provided. Please enter your NVIDIA API key to enable AI analysis."
     
     try:
+        # Initialize OpenAI client for NVIDIA API with latest version
         client = OpenAI(
-            base_url="https://integrate.api.nvidia.com/v1",
-            api_key=api_key
+            api_key=api_key,
+            base_url="https://integrate.api.nvidia.com/v1"
         )
         
         # Create a summary for AI analysis
@@ -289,6 +290,11 @@ def clear_api_key():
     session.pop('api_key', None)
     flash('API key cleared from session')
     return redirect(url_for('index'))
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint."""
+    return jsonify({'status': 'healthy', 'service': 'TerraReviewBot'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
